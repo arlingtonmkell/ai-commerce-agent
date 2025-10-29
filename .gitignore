@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Environments
+.env
+.venv/
+venv/
+ENV/
+
+# Data and Models
+*.npy
+*.pt
+*.ckpt
+*.h5
+*.pkl
+*.joblib
+
+# Embeddings and index files
+embeddings/
+index/
+*.faiss
+
+# API Keys / Secrets
+secrets.json
+config.yaml
+*.key
+*.pem
+
+# OS
+.DS_Store
+Thumbs.db
+
+# VSCode / PyCharm
+.vscode/
+.idea/
+
+# FastAPI auto-generated
+*.db
