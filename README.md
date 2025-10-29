@@ -25,7 +25,7 @@ embeddings/ is ignored for size and privacy. Use vector_utils.py to regenerate f
 | agent_core/dispatcher.py |
 +---------------------+
     ↓         ↓         ↓
- [chat]   [recommender]   [vision]
+ [query]   [recommender]   [vision]
 ```
 
  ##  Setup
@@ -49,7 +49,7 @@ uvicorn api.main:app --reload
 ai-commerce-agent/
 ├── api/                 # FastAPI endpoint
 ├── agent_core/          # Dispatcher logic
-├── chat/                # General chat + intent routing
+├── query/               # General query + intent routing
 ├── recommender/         # Text embedding and search
 ├── vision/              # CLIP-based image matching
 ├── catalog/             # Product data loader
