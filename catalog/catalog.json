@@ -1,0 +1,47 @@
+[
+  {
+    "id": "001",
+    "name": "Red Cotton T-Shirt",
+    "description": "Soft, breathable cotton tee ideal for daily wear. Regular fit with round neck.",
+    "price": 19.99,
+    "image": "assets/red_tshirt.jpg",
+    "tags": ["tshirt", "cotton", "casual", "red", "round-neck"],
+    "features": {
+      "color": "red",
+      "style": "casual",
+      "material": "cotton",
+      "gender": "unisex",
+      "fit": "regular"
+    }
+  },
+  {
+    "id": "002",
+    "name": "Blue Denim Jeans",
+    "description": "Classic straight-fit denim jeans made with durable cotton blend.",
+    "price": 44.50,
+    "image": "assets/blue_jeans.jpg",
+    "tags": ["jeans", "denim", "blue", "pants"],
+    "features": {
+      "color": "blue",
+      "style": "casual",
+      "material": "denim",
+      "gender": "unisex",
+      "fit": "straight"
+    }
+  },
+  {
+    "id": "003",
+    "name": "Black Running Shoes",
+    "description": "Lightweight mesh running shoes with cushioned sole for maximum comfort.",
+    "price": 69.00,
+    "image": "assets/black_running_shoes.jpg",
+    "tags": ["shoes", "running", "sport", "black"],
+    "features": {
+      "color": "black",
+      "style": "sport",
+      "material": "mesh",
+      "gender": "unisex",
+      "fit": "standard"
+    }
+  }
+]

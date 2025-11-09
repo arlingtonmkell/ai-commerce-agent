@@ -9,7 +9,7 @@ import yaml
 import numpy as np
 from pathlib import Path
 
-from prompt_builders import *
+from agent_core.prompt_builders import *
 from recommender.recommend import recommend_products
 from vision.image_match import match_image
 from embeddings.text_embed import embed_text
@@ -160,3 +160,40 @@ def log_perf(component: str, intent: str, latency: float):
             f.write(json.dumps(entry) + "\n")
     except Exception as e:
         print(f"[dispatcher] Logging failed: {e}")
+
+from agent_core.logger import log_event
+import numpy as np
+from io import BytesIO
+import base64
+from PIL import Image
+
+def handle_query(text=None, image=None):
+    """
+    High-level interface for API.
+    Accepts text (str) or base64-encoded image (str).
+    Returns structured prompt or model-ready response.
+    """
+    log_event("query_received", {"text": text, "has_image": bool(image)})
+
+    # ── TEXT ROUTE ─────────────────────────────────────────────
+    if text and not image:
+        response = route_input(text)
+
+    # ── IMAGE ROUTE ────────────────────────────────────────────
+    elif image:
+        try:
+            # Decode base64 → image → mock vector (placeholder)
+            image_bytes = base64.b64decode(image)
+            img = Image.open(BytesIO(image_bytes))
+            # Simplified embedding: flatten and normalize pixel mean
+            image_vec = np.array(img).mean(axis=(0, 1))
+            response = route_input({"image": image_vec.tolist()})
+        except Exception as e:
+            response = {"error": f"Image decoding failed: {str(e)}"}
+
+    # ── INVALID ROUTE ───────────────────────────────────────────
+    else:
+        response = {"error": "No input provided."}
+
+    log_event("response_generated", response)
+    return response
