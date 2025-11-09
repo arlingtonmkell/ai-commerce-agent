@@ -126,3 +126,13 @@ def generate_response(prompt_dict: dict, config: LLMConfig = LLMConfig()) -> str
     prompt = f"{sys}\n\nUser: {usr}\n{ctx}\n\nAssistant:"
     out = pipe(prompt)[0]["generated_text"]
     return out.split("Assistant:")[-1].strip()
+
+
+llm = PalonaLLM()  # global instance, shared across dispatcher
+
+def set_mode(mode: str):
+    """
+    Switch system-level behavior (recommend / explain / compare).
+    """
+    llm.mode = mode
+    return f"Mode set to {mode}"
