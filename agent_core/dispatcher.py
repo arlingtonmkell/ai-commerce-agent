@@ -8,26 +8,45 @@ import time
 import yaml
 import numpy as np
 from pathlib import Path
+
 from prompt_builders import *
 from recommender.recommend import recommend_products
 from vision.image_match import match_image
 from embeddings.text_embed import embed_text
-from vector_utils import cosine_sim
+from recommender.vector_utils import cosine_similarity as cosine_sim
 
 
-# ===== CONFIG =====
+# ────────────────────────────────────────────────────────────────
+# CONFIGURATION
+# ────────────────────────────────────────────────────────────────
 INTENT_PATH = Path(__file__).resolve().parents[1] / "config" / "intent.yaml"
 USE_DEEP_ROUTING = False
 CONFIDENCE_THRESHOLD = 0.6
 
 
-# ===== LOAD INTENT DICTIONARIES =====
-with open(INTENT_PATH, "r", encoding="utf-8") as f:
-    INTENT_KEYWORDS = yaml.safe_load(f)
+# ────────────────────────────────────────────────────────────────
+# LOAD INTENT DICTIONARIES
+# ────────────────────────────────────────────────────────────────
+if INTENT_PATH.exists():
+    with open(INTENT_PATH, "r", encoding="utf-8") as f:
+        INTENT_KEYWORDS = yaml.safe_load(f)
+else:
+    INTENT_KEYWORDS = {
+        "general": ["hi", "hello", "help", "name", "what can you do"],
+        "recommend": ["recommend", "find", "suggest", "buy", "looking for"],
+        "vision": ["image", "photo", "upload", "picture", "similar to this"],
+    }
 
-def fuzzy_in(text, keywords):
-    """Simple typo-tolerant match (edit distance ≤1)."""
+
+# ────────────────────────────────────────────────────────────────
+# FUZZY MATCHING
+# ────────────────────────────────────────────────────────────────
+def fuzzy_in(text: str, keywords: list[str]) -> bool:
+    """
+    Simple typo-tolerant match using Levenshtein distance ≤ 1.
+    """
     from Levenshtein import distance as lev
+    text = text.lower()
     for kw in keywords:
         if kw in text:
             return True
@@ -36,9 +55,13 @@ def fuzzy_in(text, keywords):
     return False
 
 
-# ===== CLASSIFIERS =====
-def classify_with_embedding(text):
-    """Embedding-based intent routing with fallback."""
+# ────────────────────────────────────────────────────────────────
+# INTENT CLASSIFIERS
+# ────────────────────────────────────────────────────────────────
+def classify_with_embedding(text: str) -> str:
+    """
+    Embedding-based routing with confidence threshold and fallback.
+    """
     global USE_DEEP_ROUTING
 
     text_vec = embed_text(text)
@@ -50,49 +73,63 @@ def classify_with_embedding(text):
     confidence = float(np.max(sims))
     intent = intents[max_idx]
 
-    # Dynamically disable deep routing if confidence low or short query
+    # Dynamically disable deep routing if signal weak
     if confidence < CONFIDENCE_THRESHOLD or len(text.split()) < 3:
         USE_DEEP_ROUTING = False
         return classify_simple(text)
+
     USE_DEEP_ROUTING = True
     return intent
 
 
-def classify_simple(text):
+def classify_simple(text: str) -> str:
+    """
+    Keyword- and fuzzy-based classification fallback.
+    """
     text = text.lower()
     for intent, keywords in INTENT_KEYWORDS.items():
         if fuzzy_in(text, keywords):
             return intent
-    return "recommend"
+    return "recommend"  # default fallback
 
 
-def classify_intent(text):
+def classify_intent(text: str) -> str:
     return classify_with_embedding(text) if USE_DEEP_ROUTING else classify_simple(text)
 
 
-# ===== ROUTING =====
+# ────────────────────────────────────────────────────────────────
+# MAIN ROUTER
+# ────────────────────────────────────────────────────────────────
 def route_input(user_input):
+    """
+    High-level router selecting correct downstream module and returning prompt dict.
+    """
     start = time.time()
     intent = classify_intent(user_input)
 
     if intent == "general":
         prompt = build_general_prompt(user_input)
+
     elif intent == "recommend":
         matches = recommend_products(user_input, top_k=5)
         prompt = build_recommend_prompt(user_input, matches)
+
     elif intent == "vision":
         matches = match_image_with_clip(user_input)
         prompt = build_vision_prompt(matches)
+
     else:
-        prompt = {"error": "Unrecognized intent"}
+        prompt = {"error": f"Unrecognized intent: {intent}"}
 
     latency = round(time.time() - start, 4)
     log_perf("dispatcher", intent, latency)
     return prompt
 
 
-# ===== HELPERS =====
-def match_image_with_clip(user_input, mode="style"):
+# ────────────────────────────────────────────────────────────────
+# IMAGE WRAPPER
+# ────────────────────────────────────────────────────────────────
+def match_image_with_clip(user_input, mode: str = "style"):
     """
     Dispatcher-level wrapper for image-based queries.
     Expects user_input to contain 'image' key with a NumPy vector or encoded image.
@@ -105,14 +142,21 @@ def match_image_with_clip(user_input, mode="style"):
     return match_image(image_vec, mode=mode, k=5)
 
 
-def log_perf(component, intent, latency):
-    """Micro-benchmark logger."""
+# ────────────────────────────────────────────────────────────────
+# PERFORMANCE LOGGER
+# ────────────────────────────────────────────────────────────────
+def log_perf(component: str, intent: str, latency: float):
+    """
+    Lightweight micro-benchmark logger.
+    Appends latency entries to /logs/dispatcher_perf.json
+    """
     LOG_PATH = Path(__file__).resolve().parents[1] / "logs" / "dispatcher_perf.json"
     LOG_PATH.parent.mkdir(exist_ok=True)
     entry = {"component": component, "intent": intent, "latency": latency, "ts": time.time()}
+
     try:
         import json
         with open(LOG_PATH, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry) + "\n")
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[dispatcher] Logging failed: {e}")
