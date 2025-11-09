@@ -54,6 +54,7 @@ ai-commerce-agent/
 ├── vision/              # CLIP-based image matching
 ├── catalog/             # Product data loader
 ├── embeddings/          # Ignored: text/image embedding cache
+└── models/              # Model Integration Layer
 ├── requirements.txt
 ├── .env.example
 ├── .gitignore
